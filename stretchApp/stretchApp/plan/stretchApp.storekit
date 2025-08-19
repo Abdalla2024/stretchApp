@@ -1,0 +1,83 @@
+{
+  "identifier" : "stretchApp",
+  "nonRenewingSubscriptions" : [
+
+  ],
+  "products" : [
+    {
+      "displayPrice" : "19.99",
+      "familyShareable" : false,
+      "internalID" : "lifetimeplan",
+      "localizations" : [
+        {
+          "description" : "Lifetime access to all stretch categories",
+          "displayName" : "Lifetime Plan",
+          "locale" : "en_US"
+        }
+      ],
+      "productID" : "lifetimeplan",
+      "referenceName" : "Lifetime Plan",
+      "type" : "NonConsumable"
+    }
+  ],
+  "settings" : {
+    "_applicationInternalID" : "stretchApp",
+    "_developerTeamID" : "YOUR_TEAM_ID",
+    "_failTransactionsEnabled" : false,
+    "_lastSynchronizedDate" : 0,
+    "_locale" : "en_US",
+    "_storefront" : "USA",
+    "_storeKitErrors" : [
+
+    ]
+  },
+  "subscriptionGroups" : [
+    {
+      "id" : "weekly_399",
+      "localizations" : [
+        {
+          "description" : "Weekly access to all stretch categories",
+          "displayName" : "Weekly Plan",
+          "locale" : "en_US"
+        }
+      ],
+      "name" : "Weekly Plan",
+      "subscriptions" : [
+        {
+          "adHocOffers" : [
+
+          ],
+          "codeOffers" : [
+
+          ],
+          "displayPrice" : "3.99",
+          "familyShareable" : false,
+          "groupNumber" : 1,
+          "internalID" : "weekly_399",
+          "introductoryOffer" : {
+            "internalID" : "weekly_399_intro",
+            "numberOfPeriods" : 1,
+            "paymentMode" : "free",
+            "subscriptionPeriod" : "P3D"
+          },
+          "localizations" : [
+            {
+              "description" : "Weekly access to all stretch categories",
+              "displayName" : "Weekly Plan",
+              "locale" : "en_US"
+            }
+          ],
+          "productID" : "weekly_399",
+          "recurringSubscriptionPeriod" : "P1W",
+          "referenceName" : "Weekly Plan",
+          "subscriptionGroupID" : "weekly_399",
+          "type" : "RecurringSubscription"
+        }
+      ]
+    }
+  ],
+  "version" : {
+    "major" : 3,
+    "minor" : 0
+  }
+}

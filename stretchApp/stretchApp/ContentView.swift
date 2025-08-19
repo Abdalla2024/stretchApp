@@ -2,7 +2,7 @@
 //  ContentView.swift
 //  stretchApp
 //
-//  Created by Abdalla Abdelmagid on 8/19/25.
+//  Created by Abdalla Abdelmagid on 8/9/25.
 //
 
 import SwiftUI
@@ -10,52 +10,42 @@ import SwiftData
 
 struct ContentView: View {
     @Environment(\.modelContext) private var modelContext
-    @Query private var items: [Item]
-
+    @State private var userPreferences: UserPreferences?
+    @State private var showingOnboarding = false
+    
     var body: some View {
-        NavigationSplitView {
-            List {
-                ForEach(items) { item in
-                    NavigationLink {
-                        Text("Item at \(item.timestamp, format: Date.FormatStyle(date: .numeric, time: .standard))")
-                    } label: {
-                        Text(item.timestamp, format: Date.FormatStyle(date: .numeric, time: .standard))
-                    }
+        Group {
+            if showingOnboarding {
+                OnboardingView {
+                    completeOnboarding()
                 }
-                .onDelete(perform: deleteItems)
+            } else {
+                BodyPartSelectionView(modelContext: modelContext)
             }
-            .toolbar {
-                ToolbarItem(placement: .navigationBarTrailing) {
-                    EditButton()
-                }
-                ToolbarItem {
-                    Button(action: addItem) {
-                        Label("Add Item", systemImage: "plus")
-                    }
-                }
-            }
-        } detail: {
-            Text("Select an item")
+        }
+        .task {
+            loadUserPreferences()
         }
     }
-
-    private func addItem() {
-        withAnimation {
-            let newItem = Item(timestamp: Date())
-            modelContext.insert(newItem)
-        }
+    
+    private func loadUserPreferences() {
+        userPreferences = UserPreferences.getCurrentPreferences(from: modelContext)
+        showingOnboarding = !(userPreferences?.hasSeenOnboarding ?? false)
     }
-
-    private func deleteItems(offsets: IndexSet) {
-        withAnimation {
-            for index in offsets {
-                modelContext.delete(items[index])
-            }
+    
+    private func completeOnboarding() {
+        userPreferences?.completeOnboarding()
+        showingOnboarding = false
+        
+        do {
+            try modelContext.save()
+        } catch {
+            print("Error saving onboarding completion: \(error)")
         }
     }
 }
 
 #Preview {
     ContentView()
-        .modelContainer(for: Item.self, inMemory: true)
+        .modelContainer(for: [StretchCategory.self, StretchExercise.self, StretchSession.self, UserPreferences.self], inMemory: true)
 }

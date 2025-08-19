@@ -2,7 +2,7 @@
 //  stretchAppApp.swift
 //  stretchApp
 //
-//  Created by Abdalla Abdelmagid on 8/19/25.
+//  Created by Abdalla Abdelmagid on 8/9/25.
 //
 
 import SwiftUI
@@ -12,7 +12,10 @@ import SwiftData
 struct stretchAppApp: App {
     var sharedModelContainer: ModelContainer = {
         let schema = Schema([
-            Item.self,
+            StretchCategory.self,
+            StretchExercise.self,
+            StretchSession.self,
+            UserPreferences.self
         ])
         let modelConfiguration = ModelConfiguration(schema: schema, isStoredInMemoryOnly: false)
 
