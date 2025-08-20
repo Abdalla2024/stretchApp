@@ -279,8 +279,9 @@ final class StretchCategoriesViewModel: ObservableObject {
             
             // Create exercises for this category
             for (index, (name, instruction, duration)) in stretches.enumerated() {
-                // First stretch is free, rest require premium
-                let isPremium = index > 0
+                // Temporarily remove premium restrictions - all exercises are free
+                // TODO: Re-implement premium logic later (first stretch free, rest premium)
+                let isPremium = false
                 
                 let exercise = StretchExercise(
                     exerciseNumber: index + 1,

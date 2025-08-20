@@ -65,12 +65,6 @@ struct StretchSessionView: View {
                     ErrorView(message: errorMessage) {
                         Task { await initializeSession() }
                     }
-                } else if stretchSessionVM.isSessionCompleted {
-                    CompletionView {
-                        Task { await stretchSessionVM.restartSession() }
-                    } onDismiss: {
-                        dismiss()
-                    }
                 } else {
                     exerciseView
                 }
@@ -212,29 +206,31 @@ struct StretchSessionView: View {
             }
 
             // Next
-            Button(action: { 
-                stopTimer()
-                Task { await stretchSessionVM.nextExercise() }
-                startTimer()
-            }) {
-                VStack(spacing: 6) {
-                    Image(systemName: "chevron.right")
-                        .font(.system(size: 18, weight: .semibold))
-                        .foregroundStyle(Color.white)
-                    Text("Next")
-                        .font(.system(size: 11, weight: .medium))
-                        .foregroundStyle(Color.white)
+            if stretchSessionVM.canGoNext {
+                Button(action: { 
+                    stopTimer()
+                    Task { await stretchSessionVM.nextExercise() }
+                    startTimer()
+                }) {
+                    VStack(spacing: 6) {
+                        Image(systemName: "chevron.right")
+                            .font(.system(size: 18, weight: .semibold))
+                            .foregroundStyle(Color.white)
+                        Text("Next")
+                            .font(.system(size: 11, weight: .medium))
+                            .foregroundStyle(Color.white)
+                    }
+                    .frame(width: 84, height: 56)
+                    .background(
+                        RoundedRectangle(cornerRadius: 14, style: .continuous)
+                            .fill(Color(red: 0.10, green: 0.12, blue: 0.13))
+                            .overlay(
+                                RoundedRectangle(cornerRadius: 14)
+                                    .stroke(Color(red: 0.16, green: 0.18, blue: 0.20), lineWidth: 1)
+                            )
+                    )
+                    .shadow(color: .black.opacity(0.35), radius: 12, x: 0, y: 8)
                 }
-                .frame(width: 84, height: 56)
-                .background(
-                    RoundedRectangle(cornerRadius: 14, style: .continuous)
-                        .fill(Color(red: 0.10, green: 0.12, blue: 0.13))
-                        .overlay(
-                            RoundedRectangle(cornerRadius: 14)
-                                .stroke(Color(red: 0.16, green: 0.18, blue: 0.20), lineWidth: 1)
-                        )
-                )
-                .shadow(color: .black.opacity(0.35), radius: 12, x: 0, y: 8)
             }
         }
     }
@@ -338,57 +334,6 @@ private struct ErrorView: View {
                             .stroke(Color(red: 0.19, green: 0.19, blue: 0.22), lineWidth: 1)
                     )
                     .shadow(color: .black.opacity(0.2), radius: 4, x: 0, y: 2)
-            }
-        }
-        .padding(32)
-    }
-}
-
-private struct CompletionView: View {
-    let onStretchAgain: () -> Void
-    let onDismiss: () -> Void
-    
-    var body: some View {
-        VStack(spacing: 32) {
-            Image(systemName: "checkmark.circle.fill")
-                .font(.system(size: 88, weight: .medium))
-                .foregroundColor(Color(red: 0.2, green: 0.78, blue: 0.35))
-            
-            Text("Great Job!")
-                .font(.system(size: 32, weight: .bold, design: .default))
-                .foregroundColor(.white)
-            
-            Text("You've completed all the stretches in this category!")
-                .font(.system(size: 16, weight: .medium, design: .default))
-                .multilineTextAlignment(.center)
-                .foregroundColor(Color(red: 0.7, green: 0.7, blue: 0.8))
-                .lineSpacing(2)
-                .padding(.horizontal, 20)
-            
-            VStack(spacing: 16) {
-                Button(action: onStretchAgain) {
-                    Text("Stretch Again")
-                        .font(.system(size: 16, weight: .semibold, design: .default))
-                        .foregroundColor(.white)
-                        .frame(width: 160, height: 48)
-                        .background(
-                            RoundedRectangle(cornerRadius: 12)
-                                .fill(Color(red: 0.13, green: 0.13, blue: 0.15))
-                                .stroke(Color(red: 0.19, green: 0.19, blue: 0.22), lineWidth: 1)
-                        )
-                        .shadow(color: .black.opacity(0.2), radius: 4, x: 0, y: 2)
-                }
-                
-                Button(action: onDismiss) {
-                    Text("Choose New Category")
-                        .font(.system(size: 16, weight: .medium, design: .default))
-                        .foregroundColor(Color(red: 0.7, green: 0.7, blue: 0.8))
-                        .frame(width: 160, height: 44)
-                        .background(
-                            RoundedRectangle(cornerRadius: 12)
-                                .stroke(Color(red: 0.19, green: 0.19, blue: 0.22), lineWidth: 1)
-                        )
-                }
             }
         }
         .padding(32)

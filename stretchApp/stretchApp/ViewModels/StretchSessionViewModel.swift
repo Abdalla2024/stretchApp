@@ -30,14 +30,11 @@ final class StretchSessionViewModel: ObservableObject {
     /// All exercises in the current category
     @Published var allExercises: [StretchExercise] = []
     
-    /// Loading state
+    /// Whether the session is currently loading
     @Published var isLoading = false
     
-    /// Error message
+    /// Error message if something goes wrong
     @Published var errorMessage: String?
-    
-    /// Whether the session is completed
-    @Published var isSessionCompleted = false
     
     /// Whether user has premium access
     var hasPremiumAccess: Bool
@@ -103,7 +100,6 @@ final class StretchSessionViewModel: ObservableObject {
             self.currentCategory = category
             self.allExercises = exercises
             self.currentExercise = exercises.first
-            self.isSessionCompleted = false
             
             // Save session
             try modelContext.save()
@@ -119,21 +115,16 @@ final class StretchSessionViewModel: ObservableObject {
     /// Move to the next exercise
     func nextExercise() async {
         guard canGoNext else {
-            await completeSession()
+            // Don't complete session automatically - just stay on the last exercise
+            // User can still navigate back to previous exercises
             return
         }
         
         let nextIndex = currentExerciseIndex + 1
         let nextExercise = allExercises[nextIndex]
         
-        // Check if next exercise requires premium
-        if nextExercise.isPremium && !hasPremiumAccess {
-            // Show paywall for premium exercise
-            // For now, just skip to the next free exercise
-            await skipToNextFreeExercise()
-            return
-        }
-        
+        // Temporarily remove premium restrictions - allow access to all exercises
+        // TODO: Re-implement premium logic later
         currentExercise = nextExercise
         
         // Update session
@@ -143,25 +134,6 @@ final class StretchSessionViewModel: ObservableObject {
             try modelContext.save()
         } catch {
             print("Error saving session: \(error)")
-        }
-    }
-    
-    /// Skip to the next free exercise
-    private func skipToNextFreeExercise() async {
-        let nextFreeIndex = allExercises.dropFirst(currentExerciseIndex + 1).firstIndex { !$0.isPremium }
-        
-        if let freeIndex = nextFreeIndex {
-            currentExercise = allExercises[freeIndex]
-            currentSession?.nextExercise()
-            
-            do {
-                try modelContext.save()
-            } catch {
-                print("Error saving session: \(error)")
-            }
-        } else {
-            // No more free exercises, complete session
-            await completeSession()
         }
     }
     
@@ -201,18 +173,6 @@ final class StretchSessionViewModel: ObservableObject {
     func restartSession() async {
         guard let category = currentCategory else { return }
         await startNewSession(for: category)
-    }
-    
-    /// Complete the current session
-    func completeSession() async {
-        currentSession?.completeSession()
-        isSessionCompleted = true
-        
-        do {
-            try modelContext.save()
-        } catch {
-            print("Error completing session: \(error)")
-        }
     }
     
     /// Add stretch time to the session
