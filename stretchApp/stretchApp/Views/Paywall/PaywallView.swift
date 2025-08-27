@@ -2,7 +2,7 @@
 //  PaywallView.swift
 //  stretchApp
 //
-//  Created by Mohamed Abdelmagid on 8/19/25.
+//  Created by Abdalla Abdelmagid on 8/19/25.
 //
 
 import SwiftUI
