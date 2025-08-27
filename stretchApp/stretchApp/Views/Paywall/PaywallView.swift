@@ -15,6 +15,7 @@ struct PaywallView: View {
     @State private var currentTestimonial = 0
     @State private var selectedPlan: String = "template_weekly"
     @State private var testimonialTimer: Timer?
+    @State private var freeTrialEnabled: Bool = true
     
     // MARK: - Constants
     private struct Constants {
@@ -46,10 +47,13 @@ struct PaywallView: View {
             }
             .toolbar {
                 ToolbarItem(placement: .topBarTrailing) {
-                    Button("Done") {
+                    Button(action: {
                         isPresented = false
+                    }) {
+                        Image(systemName: "xmark")
+                            .font(.system(size: 16, weight: .medium))
+                            .foregroundStyle(.secondary)
                     }
-                    .foregroundStyle(.blue)
                 }
             }
             .onChange(of: storeManager.isSubscribed) { _, newValue in
@@ -75,7 +79,7 @@ struct PaywallView: View {
     }
     
     private var featuresSection: some View {
-        VStack(alignment: .leading, spacing: 16) {
+        VStack(spacing: 16) {
             FeatureRow(icon: "figure.flexibility", text: "All 25 Body Part Categories")
             FeatureRow(icon: "clock.fill", text: "125+ Guided Stretches")
             FeatureRow(icon: "sparkles", text: "Premium Stretch Access")
@@ -137,94 +141,151 @@ struct PaywallView: View {
     }
     
     private var subscriptionPlansSection: some View {
-        VStack(spacing: 16) {
-            Text("Choose Your Plan")
-                .font(.system(size: 20, weight: .bold))
+        VStack(spacing: 12) {
+            PlanCardView(
+                title: "Lifetime Plan",
+                price: "$24.99",
+                originalPrice: "$249.99",
+                badge: "BEST VALUE",
+                isSelected: selectedPlan == "template_lifetime",
+                onTap: { 
+                    selectedPlan = "template_lifetime"
+                    freeTrialEnabled = false
+                }
+            )
+            
+            PlanCardView(
+                title: "3-Day Trial",
+                subtitle: "then $3.99 per week",
+                isSelected: selectedPlan == "template_weekly",
+                onTap: { 
+                    selectedPlan = "template_weekly"
+                    freeTrialEnabled = true
+                }
+            )
+            
+            // Free Trial Toggle
+            freeTrialToggle
+        }
+        .padding(.horizontal, 20)
+    }
+    
+
+    
+    private var freeTrialToggle: some View {
+        HStack {
+            Text("Free Trial Enabled")
+                .font(.system(size: 18, weight: .semibold))
                 .foregroundStyle(.primary)
             
-            VStack(spacing: 12) {
-                ForEach(storeManager.products, id: \.id) { product in
-                    SubscriptionPlanCard(
-                        product: product,
-                        isSelected: selectedPlan == product.id,
-                        onTap: {
-                            selectedPlan = product.id
-                        }
-                    )
+            Spacer()
+            
+            Toggle("", isOn: $freeTrialEnabled)
+                .labelsHidden()
+                .scaleEffect(1.2)
+                .tint(.black)
+                .onChange(of: freeTrialEnabled) { _, newValue in
+                    if newValue {
+                        selectedPlan = "template_weekly"
+                    } else {
+                        selectedPlan = "template_lifetime"
+                    }
                 }
-            }
         }
-        .padding(.horizontal, 24)
+        .padding(.horizontal, 16)
+        .padding(.vertical, 14)
+        .background(
+            RoundedRectangle(cornerRadius: 12)
+                .fill(.gray.opacity(0.1))
+        )
     }
     
     private var purchaseButtonSection: some View {
-        VStack(spacing: 16) {
-            if let selectedProduct = storeManager.products.first(where: { $0.id == selectedPlan }) {
-                Button(action: {
-                    Task {
-                        await storeManager.purchase(selectedProduct)
-                    }
-                }) {
-                    HStack {
-                        if storeManager.purchaseState == .purchasing {
-                            ProgressView()
-                                .progressViewStyle(CircularProgressViewStyle(tint: .white))
-                                .scaleEffect(0.8)
-                        } else {
-                            Text("Start \(selectedProduct.displayName)")
-                                .font(.system(size: 18, weight: .semibold))
-                        }
-                    }
-                    .foregroundStyle(.white)
-                    .frame(maxWidth: .infinity)
-                    .frame(height: 56)
-                    .background(
-                        RoundedRectangle(cornerRadius: 16)
-                            .fill(.blue)
-                    )
+        Button(action: purchaseSelectedPlan) {
+            HStack(spacing: 8) {
+                if storeManager.purchaseState == .purchasing {
+                    ProgressView()
+                        .progressViewStyle(CircularProgressViewStyle(tint: .white))
+                        .scaleEffect(0.8)
                 }
-                .disabled(storeManager.purchaseState == .purchasing)
                 
-                if case .failed(let error) = storeManager.purchaseState {
-                    Text(error.localizedDescription)
-                        .font(.system(size: 14))
-                        .foregroundStyle(.red)
-                        .multilineTextAlignment(.center)
-                }
+                Text(purchaseButtonText)
+                    .font(.headline)
+                    .foregroundStyle(.white)
             }
+            .frame(maxWidth: .infinity)
+            .padding(.vertical, 16)
+            .background(
+                LinearGradient(
+                    gradient: Gradient(colors: [Color.blue, Color.purple]),
+                    startPoint: .leading,
+                    endPoint: .trailing
+                )
+            )
+            .cornerRadius(12)
         }
-        .padding(.horizontal, 24)
+        .padding(.horizontal, 20)
+        .disabled(storeManager.purchaseState == .purchasing)
     }
     
     private var bottomLinksSection: some View {
-        VStack(spacing: 16) {
-            Button("Restore Purchases") {
-                Task {
-                    await storeManager.restorePurchases()
-                }
-            }
-            .font(.system(size: 16, weight: .medium))
-            .foregroundStyle(.blue)
-            
-            Text("Cancel anytime. Terms and Privacy Policy apply.")
-                .font(.system(size: 12))
+        HStack(spacing: 16) {
+            Button("Restore", action: restorePurchases)
+                .font(.footnote)
                 .foregroundStyle(.secondary)
-                .multilineTextAlignment(.center)
-                .padding(.horizontal, 32)
+            
+            Text("•")
+                .foregroundStyle(.secondary)
+            
+            Button("Terms") {
+                // TODO: Handle terms action
+            }
+            .font(.footnote)
+            .foregroundStyle(.secondary)
+            
+            Text("•")
+                .foregroundStyle(.secondary)
+            
+            Button("Privacy") {
+                // TODO: Handle privacy action
+            }
+            .font(.footnote)
+            .foregroundStyle(.secondary)
         }
+        .padding(.bottom, 20)
     }
     
-    // MARK: - Helper Methods
+    // MARK: - Computed Properties
+    private var purchaseButtonText: String {
+        freeTrialEnabled ? "Start Free Trial" : "Unlock Now"
+    }
+    
+    // MARK: - Methods
     private func startTestimonialTimer() {
+        testimonialTimer?.invalidate()
         testimonialTimer = Timer.scheduledTimer(withTimeInterval: Constants.testimonialInterval, repeats: true) { _ in
             withAnimation(.easeInOut(duration: Constants.animationDuration)) {
                 currentTestimonial = (currentTestimonial + 1) % testimonials.count
             }
         }
     }
+    
+    private func purchaseSelectedPlan() {
+        guard let product = storeManager.products.first(where: { $0.id == selectedPlan }) else { return }
+        Task {
+            await storeManager.purchase(product)
+        }
+    }
+    
+    private func restorePurchases() {
+        Task {
+            await storeManager.restorePurchases()
+        }
+    }
 }
 
 // MARK: - Supporting Views
+
 struct FeatureRow: View {
     let icon: String
     let text: String
@@ -239,53 +300,107 @@ struct FeatureRow: View {
             Text(text)
                 .font(.system(size: 16, weight: .medium))
                 .foregroundStyle(.primary)
-            
-            Spacer()
         }
     }
 }
 
-struct SubscriptionPlanCard: View {
-    let product: Product
+struct PlanCardView: View {
+    let title: String
+    var subtitle: String?
+    var price: String?
+    var originalPrice: String?
+    var badge: String?
     let isSelected: Bool
     let onTap: () -> Void
     
     var body: some View {
         Button(action: onTap) {
-            HStack {
+            HStack(spacing: 16) {
                 VStack(alignment: .leading, spacing: 4) {
-                    Text(product.displayName)
-                        .font(.system(size: 16, weight: .semibold))
-                        .foregroundStyle(.primary)
+                    titleWithBadge
                     
-                    if product.type == .autoRenewable {
-                        Text("\(product.displayPrice) per week")
-                            .font(.system(size: 14))
+                    if let subtitle = subtitle {
+                        Text(subtitle)
+                            .font(.subheadline)
                             .foregroundStyle(.secondary)
-                    } else {
-                        Text(product.displayPrice)
-                            .font(.system(size: 14))
-                            .foregroundStyle(.secondary)
+                    }
+                    
+                    if price != nil {
+                        priceView
                     }
                 }
                 
                 Spacer()
                 
-                Image(systemName: isSelected ? "checkmark.circle.fill" : "circle")
-                    .font(.system(size: 20))
-                    .foregroundStyle(isSelected ? .blue : .gray)
+                selectionIndicator
             }
             .padding(16)
-            .background(
+            .frame(height: 80)
+            .background(Color(.systemBackground))
+            .cornerRadius(12)
+            .overlay(
                 RoundedRectangle(cornerRadius: 12)
-                    .fill(isSelected ? .blue.opacity(0.1) : .gray.opacity(0.1))
-                    .overlay(
-                        RoundedRectangle(cornerRadius: 12)
-                            .stroke(isSelected ? .blue : .gray.opacity(0.3), lineWidth: 1)
-                    )
+                    .stroke(isSelected ? Color.blue : Color.gray.opacity(0.2), lineWidth: isSelected ? 2 : 1)
             )
         }
-        .buttonStyle(.plain)
+        .buttonStyle(PlainButtonStyle())
+    }
+    
+    private var titleWithBadge: some View {
+        HStack(spacing: 8) {
+            Text(title)
+                .font(.headline)
+                .foregroundStyle(.primary)
+            
+            if let badge = badge {
+                Text(badge)
+                    .font(.caption)
+                    .fontWeight(.bold)
+                    .foregroundStyle(.white)
+                    .padding(.horizontal, 8)
+                    .padding(.vertical, 4)
+                    .background(
+                        LinearGradient(
+                            gradient: Gradient(colors: [Color.blue, Color.purple]),
+                            startPoint: .leading,
+                            endPoint: .trailing
+                        )
+                    )
+                    .cornerRadius(12)
+            }
+        }
+    }
+    
+    private var priceView: some View {
+        HStack(spacing: 8) {
+            if let originalPrice = originalPrice {
+                Text(originalPrice)
+                    .font(.subheadline)
+                    .foregroundStyle(.secondary)
+                    .strikethrough()
+            }
+            Text(price!)
+                .font(.headline)
+                .fontWeight(.bold)
+                .foregroundStyle(.primary)
+        }
+    }
+    
+    private var selectionIndicator: some View {
+        Circle()
+            .fill(isSelected ? Color.blue : Color.clear)
+            .frame(width: 24, height: 24)
+            .overlay(
+                Circle()
+                    .stroke(isSelected ? Color.blue : Color.gray.opacity(0.3), lineWidth: 2)
+            )
+            .overlay(
+                Image(systemName: "checkmark")
+                    .font(.caption)
+                    .fontWeight(.bold)
+                    .foregroundStyle(.white)
+                    .opacity(isSelected ? 1 : 0)
+            )
     }
 }
 
