@@ -207,32 +207,33 @@ struct StretchSessionView: View {
     
     private var controlButtons: some View {
         HStack(spacing: 22) {
-            // Previous
-            Button(action: { 
-                stopTimer()
-                Task { await stretchSessionVM.previousExercise() }
-                startTimer()
-            }) {
-                VStack(spacing: 6) {
-                    Image(systemName: "chevron.left")
-                        .font(.system(size: 18, weight: .semibold))
-                        .foregroundStyle(stretchSessionVM.canGoPrevious ? Color.white : Color.white.opacity(0.5))
-                    Text("Previous")
-                        .font(.system(size: 11, weight: .medium))
-                        .foregroundStyle(stretchSessionVM.canGoPrevious ? Color.white : Color.white.opacity(0.5))
+            // Previous (only show if not first exercise)
+            if stretchSessionVM.canGoPrevious {
+                Button(action: { 
+                    stopTimer()
+                    Task { await stretchSessionVM.previousExercise() }
+                    startTimer()
+                }) {
+                    VStack(spacing: 6) {
+                        Image(systemName: "chevron.left")
+                            .font(.system(size: 18, weight: .semibold))
+                            .foregroundStyle(Color.white)
+                        Text("Previous")
+                            .font(.system(size: 11, weight: .medium))
+                            .foregroundStyle(Color.white)
+                    }
+                    .frame(width: 84, height: 56)
+                    .background(
+                        RoundedRectangle(cornerRadius: 14, style: .continuous)
+                            .fill(Color(red: 0.10, green: 0.12, blue: 0.13))
+                            .overlay(
+                                RoundedRectangle(cornerRadius: 14)
+                                    .stroke(Color(red: 0.16, green: 0.18, blue: 0.20), lineWidth: 1)
+                            )
+                    )
+                    .shadow(color: .black.opacity(0.35), radius: 12, x: 0, y: 8)
                 }
-                .frame(width: 84, height: 56)
-                .background(
-                    RoundedRectangle(cornerRadius: 14, style: .continuous)
-                        .fill(Color(red: 0.10, green: 0.12, blue: 0.13))
-                        .overlay(
-                            RoundedRectangle(cornerRadius: 14)
-                                .stroke(stretchSessionVM.canGoPrevious ? Color(red: 0.16, green: 0.18, blue: 0.20) : Color(red: 0.12, green: 0.13, blue: 0.15), lineWidth: 1)
-                        )
-                )
-                .shadow(color: .black.opacity(0.35), radius: 12, x: 0, y: 8)
             }
-            .disabled(!stretchSessionVM.canGoPrevious)
 
             // Play/Pause
             Button(action: toggleTimer) {
@@ -342,7 +343,36 @@ struct StretchSessionView: View {
         if isTimerRunning {
             stopTimer()
         } else {
-            startTimer()
+            resumeTimer()
+        }
+    }
+    
+    private func resumeTimer() {
+        guard timeRemaining > 0 else { return }
+        
+        isTimerRunning = true
+        print("🔄 Resuming timer with \(timeRemaining) seconds remaining")
+        
+        timer = Timer.scheduledTimer(withTimeInterval: 1.0, repeats: true) { _ in
+            if timeRemaining > 0 {
+                timeRemaining -= 1
+                // Use Task to handle async call
+                Task { @MainActor in
+                    stretchSessionVM.addStretchTime(1)
+                }
+            } else {
+                stopTimer()
+                // Auto-advance to next exercise
+                Task { @MainActor in
+                    // Check if next exercise requires premium access
+                    if stretchSessionVM.checkNextExercisePremiumAccess() {
+                        showingPaywall = true
+                    } else {
+                        await stretchSessionVM.nextExercise()
+                        startTimer()
+                    }
+                }
+            }
         }
     }
     
