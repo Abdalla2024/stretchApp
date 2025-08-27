@@ -261,14 +261,24 @@ struct CategoryCardView: View {
     var body: some View {
         ZStack {
             VStack(spacing: 12) {
-                // Category Icon
-                Image(systemName: category.iconName)
-                    .resizable()
-                    .aspectRatio(contentMode: .fit)
-                    .frame(width: 60, height: 60)
-                    .foregroundColor(.blue)
-                    .clipShape(RoundedRectangle(cornerRadius: 12))
-                    .shadow(color: .black.opacity(0.1), radius: 2, x: 0, y: 1)
+                // Category Image (first stretch) or Icon fallback
+                if let imageName = category.imageName, let uiImage = UIImage(named: imageName) {
+                    Image(uiImage: uiImage)
+                        .resizable()
+                        .aspectRatio(contentMode: .fill)
+                        .frame(width: 60, height: 60)
+                        .clipShape(RoundedRectangle(cornerRadius: 12))
+                        .shadow(color: .black.opacity(0.1), radius: 2, x: 0, y: 1)
+                } else {
+                    // Fallback to system icon
+                    Image(systemName: category.iconName)
+                        .resizable()
+                        .aspectRatio(contentMode: .fit)
+                        .frame(width: 60, height: 60)
+                        .foregroundColor(.blue)
+                        .clipShape(RoundedRectangle(cornerRadius: 12))
+                        .shadow(color: .black.opacity(0.1), radius: 2, x: 0, y: 1)
+                }
                 
                 VStack(spacing: 4) {
                     // Category Name
@@ -277,8 +287,8 @@ struct CategoryCardView: View {
                         .multilineTextAlignment(.center)
                         .lineLimit(2)
                     
-                    // Stretch Count
-                    Text("\(category.stretches.count) stretches")
+                    // Total Time
+                    Text(totalTimeText)
                         .font(.caption)
                         .foregroundColor(.secondary)
                 }
@@ -326,9 +336,18 @@ struct CategoryCardView: View {
             }
         }
         .accessibilityLabel(category.name)
-        .accessibilityValue("\(category.stretches.count) stretches available")
+        .accessibilityValue("\(totalTimeText) total stretching time")
         .accessibilityHint(accessibilityHintText)
         .accessibilityAddTraits(.isButton)
+    }
+    
+    private var totalTimeText: String {
+        let totalSeconds = category.stretches.reduce(0) { $0 + $1.stretchTimeSec }
+        
+        // Round up to the nearest minute - any partial minute rounds up
+        let totalMinutes = Int(ceil(Double(totalSeconds) / 60.0))
+        
+        return "\(totalMinutes) min"
     }
     
     private var accessibilityHintText: String {

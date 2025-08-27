@@ -120,6 +120,18 @@ struct StretchSessionView: View {
                     .foregroundColor(.white)
                     .multilineTextAlignment(.center)
                     .lineLimit(3)
+                    .onAppear {
+                        if let exercise = stretchSessionVM.currentExercise {
+                            print("🖥️ UI displaying exercise: \(exercise.name) - \(exercise.stretchTimeSec)s")
+                        }
+                    }
+                    .onChange(of: stretchSessionVM.currentExercise) { _, newExercise in
+                        if let exercise = newExercise {
+                            print("🖥️ UI exercise changed to: \(exercise.name) - \(exercise.stretchTimeSec)s")
+                            // Restart timer whenever exercise changes
+                            startTimer()
+                        }
+                    }
                 
                 // Exercise Image
                 if let imageName = stretchSessionVM.currentExercise?.imageName {
@@ -165,6 +177,12 @@ struct StretchSessionView: View {
                     .font(.system(size: 72, weight: .bold, design: .monospaced))
                     .foregroundColor(.white)
                     .monospacedDigit()
+                    .onAppear {
+                        print("🖥️ UI displaying timeRemaining: \(timeRemaining)")
+                    }
+                    .onChange(of: timeRemaining) { _, newValue in
+                        print("🖥️ UI timeRemaining changed to: \(newValue)")
+                    }
                 
                 // Progress Bar
                 ProgressView(value: progressValue)
@@ -280,8 +298,16 @@ struct StretchSessionView: View {
     private func startTimer() {
         guard let exercise = stretchSessionVM.currentExercise else { return }
         
+        // Always stop any existing timer first
+        stopTimer()
+        
+        // Debug: Log what exercise and timing we're using
+        print("🕐 Starting timer for: \(exercise.name) - \(exercise.stretchTimeSec)s")
+        
+        // Force update the timeRemaining 
         timeRemaining = exercise.stretchTimeSec
         isTimerRunning = true
+        print("🕐 Timer set timeRemaining to: \(timeRemaining)")
         
         timer = Timer.scheduledTimer(withTimeInterval: 1.0, repeats: true) { _ in
             if timeRemaining > 0 {
@@ -345,7 +371,25 @@ struct StretchSessionView: View {
     
     @MainActor
     private func initializeSession() async {
-        await stretchSessionVM.startNewSession(for: category)
+        // Get fresh category data from database to ensure we have the latest exercises
+        do {
+            let descriptor = FetchDescriptor<StretchCategory>(
+                sortBy: [SortDescriptor(\.name)]
+            )
+            let allCategories = try modelContext.fetch(descriptor)
+            
+            if let freshCategory = allCategories.first(where: { $0.id == category.id }) {
+                print("🔄 Using fresh category data for: \(freshCategory.name)")
+                await stretchSessionVM.startNewSession(for: freshCategory)
+            } else {
+                print("⚠️ Could not find fresh category, using original")
+                await stretchSessionVM.startNewSession(for: category)
+            }
+        } catch {
+            print("❌ Error fetching fresh category: \(error)")
+            await stretchSessionVM.startNewSession(for: category)
+        }
+        
         startTimer()
     }
 }

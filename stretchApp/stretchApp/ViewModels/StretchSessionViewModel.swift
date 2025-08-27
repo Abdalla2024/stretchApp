@@ -85,15 +85,23 @@ final class StretchSessionViewModel: ObservableObject {
             let session = StretchSession(category: category)
             modelContext.insert(session)
             
-            // Get all exercises for this category
-            let descriptor = FetchDescriptor<StretchExercise>(
+            // Force fetch exercises from database instead of using category relationship
+            let exerciseDescriptor = FetchDescriptor<StretchExercise>(
                 sortBy: [SortDescriptor(\.exerciseNumber)]
             )
-            
-            let allExercises = try modelContext.fetch(descriptor)
-            
-            // Filter exercises for this category
+            let allExercises = try modelContext.fetch(exerciseDescriptor)
             let exercises = allExercises.filter { $0.category?.id == category.id }
+            
+            print("🔍 Total exercises in DB: \(allExercises.count)")
+            print("🔍 Exercises for \(category.name): \(exercises.count)")
+            
+            // Debug: Log exercise times for Abdominals
+            if category.name == "Abdominals" {
+                print("🔍 StretchSessionViewModel loading Abdominals exercises from fresh DB fetch:")
+                for exercise in exercises {
+                    print("  \(exercise.exerciseNumber): \(exercise.name) - \(exercise.stretchTimeSec)s")
+                }
+            }
             
             // Update state
             self.currentSession = session
@@ -132,6 +140,11 @@ final class StretchSessionViewModel: ObservableObject {
         
         let nextIndex = currentExerciseIndex + 1
         let nextExercise = allExercises[nextIndex]
+        
+        print("🔄 Moving to next exercise:")
+        print("  Current index: \(currentExerciseIndex)")
+        print("  Next index: \(nextIndex)")
+        print("  Next exercise: \(nextExercise.name) - \(nextExercise.stretchTimeSec)s")
         
         // Temporarily remove premium restrictions - allow access to all exercises
         // TODO: Re-implement premium logic later

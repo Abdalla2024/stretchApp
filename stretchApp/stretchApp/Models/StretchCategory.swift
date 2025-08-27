@@ -19,6 +19,9 @@ final class StretchCategory {
     /// Icon name for UI display
     var iconName: String
     
+    /// Image name for the category (usually the first stretch image)
+    var imageName: String?
+    
     /// Total number of stretches in this category
     var stretchCount: Int
     
@@ -39,10 +42,11 @@ final class StretchCategory {
     @Relationship(deleteRule: .cascade, inverse: \StretchSession.category)
     var sessions: [StretchSession] = []
     
-    init(name: String, iconName: String, stretchCount: Int = 0, isPremium: Bool = false) {
+    init(name: String, iconName: String, imageName: String? = nil, stretchCount: Int = 0, isPremium: Bool = false) {
         self.id = UUID()
         self.name = name
         self.iconName = iconName
+        self.imageName = imageName
         self.stretchCount = stretchCount
         self.createdAt = Date()
         self.isActive = true
