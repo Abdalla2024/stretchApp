@@ -21,12 +21,13 @@ struct BodyPartSelectionView: View {
     @StateObject private var categoriesViewModel: StretchCategoriesViewModel
     
     /// StoreKit manager for premium purchases
-    @State private var storeKitManager = StoreKitManager()
+    @StateObject private var storeManager = StoreManager()
     
     /// User preferences for premium status
     @State private var userPreferences: UserPreferences?
     
-
+    /// Paywall presentation state
+    @State private var showingPaywall = false
     
     /// Settings presentation state
     @State private var showingSettings = false
@@ -66,12 +67,16 @@ struct BodyPartSelectionView: View {
 
                 .sheet(isPresented: $showingSettings) {
                     SettingsView(
-                        storeKitManager: storeKitManager,
+                        storeManager: storeManager,
                         modelContext: modelContext,
                         onDismiss: {
                             showingSettings = false
                         }
                     )
+                }
+                .sheet(isPresented: $showingPaywall) {
+                    PaywallView(isPresented: $showingPaywall)
+                        .environmentObject(storeManager)
                 }
         }
     }
@@ -98,7 +103,7 @@ struct BodyPartSelectionView: View {
             LazyVGrid(columns: gridColumns, spacing: 20) {
                 ForEach(filteredCategories) { category in
                     // All categories are free - navigate to stretch session
-                    NavigationLink(destination: StretchSessionView(category: category, modelContext: modelContext)) {
+                    NavigationLink(destination: StretchSessionView(category: category, modelContext: modelContext, storeManager: storeManager)) {
                         CategoryCardView(
                             category: category,
                             badgeType: .none,
@@ -204,18 +209,18 @@ struct BodyPartSelectionView: View {
     // MARK: - Computed Properties
     
     private var hasPremiumAccess: Bool {
-        // Primary: Use StoreKitManager as the authoritative source of truth
-        if storeKitManager.hasPremiumAccess {
+        // Primary: Use StoreManager as the authoritative source of truth
+        if storeManager.isSubscribed {
             return true
         }
         
-        // Only use UserPreferences as fallback if StoreKitManager failed to load products
-        // This ensures we have offline functionality while maintaining StoreKit as source of truth
-        if !storeKitManager.products.isEmpty {
-            // StoreKitManager loaded successfully, trust its result (false)
+        // Only use UserPreferences as fallback if StoreManager failed to load products
+        // This ensures we have offline functionality while maintaining StoreManager as source of truth
+        if !storeManager.products.isEmpty {
+            // StoreManager loaded successfully, trust its result (false)
             return false
         } else {
-            // StoreKitManager failed to load, use cached UserPreferences as fallback
+            // StoreManager failed to load, use cached UserPreferences as fallback
             return userPreferences?.isSubscriptionValid ?? false
         }
     }

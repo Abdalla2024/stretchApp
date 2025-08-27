@@ -2,7 +2,7 @@
 //  StretchSessionViewModel.swift
 //  stretchApp
 //
-//  Created by Claude on 8/9/25.
+//  Created by Abdalla Abdelmagid on 8/9/25.
 //
 
 import Foundation
@@ -36,8 +36,8 @@ final class StretchSessionViewModel: ObservableObject {
     /// Error message if something goes wrong
     @Published var errorMessage: String?
     
-    /// Whether user has premium access
-    var hasPremiumAccess: Bool
+    /// Store manager for premium access
+    @ObservedObject var storeManager: StoreManager
     
     // MARK: - Computed Properties
     
@@ -68,9 +68,9 @@ final class StretchSessionViewModel: ObservableObject {
     
     // MARK: - Initialization
     
-    init(modelContext: ModelContext, hasPremiumAccess: Bool = false) {
+    init(modelContext: ModelContext, storeManager: StoreManager) {
         self.modelContext = modelContext
-        self.hasPremiumAccess = hasPremiumAccess
+        self.storeManager = storeManager
     }
     
     // MARK: - Public Methods
@@ -110,6 +110,16 @@ final class StretchSessionViewModel: ObservableObject {
         }
         
         isLoading = false
+    }
+    
+    /// Check if next exercise requires premium access
+    func checkNextExercisePremiumAccess() -> Bool {
+        guard canGoNext else { return false }
+        
+        let nextIndex = currentExerciseIndex + 1
+        let nextExercise = allExercises[nextIndex]
+        
+        return nextExercise.isPremium && !storeManager.isSubscribed
     }
     
     /// Move to the next exercise

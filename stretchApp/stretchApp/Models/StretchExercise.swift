@@ -2,7 +2,7 @@
 //  StretchExercise.swift
 //  stretchApp
 //
-//  Created by Claude on 8/9/25.
+//  Created by Abdalla Abdelmagid on 8/9/25.
 //
 
 import Foundation
@@ -46,15 +46,19 @@ final class StretchExercise {
     /// Whether this exercise requires premium subscription
     var isPremium: Bool
     
+    /// Image filename for this exercise
+    var imageName: String?
+    
     /// Relationship to category
     var category: StretchCategory?
     
-    init(exerciseNumber: Int, name: String, instruction: String, stretchTimeSec: Int, category: StretchCategory? = nil, difficultyLevel: Int = 1, isPremium: Bool = false) {
+    init(exerciseNumber: Int, name: String, instruction: String, stretchTimeSec: Int, imageName: String? = nil, category: StretchCategory? = nil, difficultyLevel: Int = 1, isPremium: Bool = false) {
         self.id = UUID()
         self.exerciseNumber = exerciseNumber
         self.name = name
         self.instruction = instruction
         self.stretchTimeSec = stretchTimeSec
+        self.imageName = imageName
         self.isCompleted = false
         self.usageCount = 0
         self.createdAt = Date()

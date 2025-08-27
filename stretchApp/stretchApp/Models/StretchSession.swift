@@ -2,7 +2,7 @@
 //  StretchSession.swift
 //  stretchApp
 //
-//  Created by Claude on 8/9/25.
+//  Created by Abdalla Abdelmagid on 8/9/25.
 //
 
 import Foundation

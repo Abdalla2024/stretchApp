@@ -15,24 +15,26 @@ struct StretchSessionView: View {
     
     let category: StretchCategory
     let modelContext: ModelContext
+    let storeManager: StoreManager
     
-    @State private var stretchSessionVM: StretchSessionViewModel
+    @StateObject private var stretchSessionVM: StretchSessionViewModel
     @Environment(\.dismiss) private var dismiss
-    
-    // Premium access state
-    @State private var hasPremiumAccess: Bool = false
     
     // Timer state
     @State private var timeRemaining: Int = 0
     @State private var isTimerRunning = false
     @State private var timer: Timer?
     
+    // Paywall state
+    @State private var showingPaywall = false
+    
     // MARK: - Initialization
     
-    init(category: StretchCategory, modelContext: ModelContext) {
+    init(category: StretchCategory, modelContext: ModelContext, storeManager: StoreManager) {
         self.category = category
         self.modelContext = modelContext
-        self._stretchSessionVM = State(initialValue: StretchSessionViewModel(modelContext: modelContext, hasPremiumAccess: false))
+        self.storeManager = storeManager
+        self._stretchSessionVM = StateObject(wrappedValue: StretchSessionViewModel(modelContext: modelContext, storeManager: storeManager))
     }
     
     // MARK: - Body
@@ -100,6 +102,10 @@ struct StretchSessionView: View {
         .onDisappear {
             stopTimer()
         }
+        .sheet(isPresented: $showingPaywall) {
+            PaywallView(isPresented: $showingPaywall)
+                .environmentObject(storeManager)
+        }
     }
     
     // MARK: - Exercise View
@@ -115,10 +121,38 @@ struct StretchSessionView: View {
                     .multilineTextAlignment(.center)
                     .lineLimit(3)
                 
-                // Body Part Icon
-                Image(systemName: category.iconName)
-                    .font(.system(size: 40))
-                    .foregroundColor(.blue)
+                // Exercise Image
+                if let imageName = stretchSessionVM.currentExercise?.imageName {
+                    // Try to load the image
+                    if let uiImage = UIImage(named: imageName) {
+                        Image(uiImage: uiImage)
+                            .resizable()
+                            .aspectRatio(contentMode: .fit)
+                            .frame(maxWidth: 280, maxHeight: 200)
+                            .cornerRadius(12)
+                            .shadow(color: .black.opacity(0.3), radius: 8, x: 0, y: 4)
+                    } else {
+                        // Debug: Show that image was not found
+                        VStack {
+                            Image(systemName: "photo.badge.exclamationmark")
+                                .font(.system(size: 40))
+                                .foregroundColor(.red)
+                            Text("Image not found: \(imageName)")
+                                .font(.caption)
+                                .foregroundColor(.red)
+                        }
+                    }
+                } else {
+                    // Fallback to body part icon if no image name
+                    VStack {
+                        Image(systemName: category.iconName)
+                            .font(.system(size: 40))
+                            .foregroundColor(.blue)
+                        Text("No image name")
+                            .font(.caption)
+                            .foregroundColor(.gray)
+                    }
+                }
             }
             
             // Timer Display
@@ -209,8 +243,14 @@ struct StretchSessionView: View {
             if stretchSessionVM.canGoNext {
                 Button(action: { 
                     stopTimer()
-                    Task { await stretchSessionVM.nextExercise() }
-                    startTimer()
+                    
+                    // Check if next exercise requires premium access
+                    if stretchSessionVM.checkNextExercisePremiumAccess() {
+                        showingPaywall = true
+                    } else {
+                        Task { await stretchSessionVM.nextExercise() }
+                        startTimer()
+                    }
                 }) {
                     VStack(spacing: 6) {
                         Image(systemName: "chevron.right")
@@ -246,13 +286,21 @@ struct StretchSessionView: View {
         timer = Timer.scheduledTimer(withTimeInterval: 1.0, repeats: true) { _ in
             if timeRemaining > 0 {
                 timeRemaining -= 1
-                stretchSessionVM.addStretchTime(1)
+                // Use Task to handle async call
+                Task { @MainActor in
+                    stretchSessionVM.addStretchTime(1)
+                }
             } else {
                 stopTimer()
                 // Auto-advance to next exercise
-                Task {
-                    await stretchSessionVM.nextExercise()
-                    startTimer()
+                Task { @MainActor in
+                    // Check if next exercise requires premium access
+                    if stretchSessionVM.checkNextExercisePremiumAccess() {
+                        showingPaywall = true
+                    } else {
+                        await stretchSessionVM.nextExercise()
+                        startTimer()
+                    }
                 }
             }
         }
@@ -278,7 +326,8 @@ struct StretchSessionView: View {
         guard let exercise = stretchSessionVM.currentExercise else { return 0.0 }
         let totalTime = Double(exercise.stretchTimeSec)
         let remaining = Double(timeRemaining)
-        return (totalTime - remaining) / totalTime
+        let progress = (totalTime - remaining) / totalTime
+        return max(0.0, min(1.0, progress)) // Ensure value is between 0 and 1
     }
     
     private func timeString(from seconds: Int) -> String {
@@ -352,5 +401,5 @@ private struct ErrorView: View {
         stretchCount: 5
     )
     
-    StretchSessionView(category: sampleCategory, modelContext: container.mainContext)
+    StretchSessionView(category: sampleCategory, modelContext: container.mainContext, storeManager: StoreManager())
 }

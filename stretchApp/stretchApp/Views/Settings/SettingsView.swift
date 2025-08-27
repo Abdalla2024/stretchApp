@@ -13,7 +13,7 @@ struct SettingsView: View {
     
     // MARK: - Properties
     
-    let storeKitManager: StoreKitManager
+    let storeManager: StoreManager
     let modelContext: ModelContext
     let onDismiss: () -> Void
     
@@ -199,7 +199,7 @@ struct SettingsView: View {
                     
                     Button("Restore Purchases") {
                         Task {
-                            await storeKitManager.restorePurchases()
+                            await storeManager.restorePurchases()
                         }
                     }
                     .frame(maxWidth: .infinity)
@@ -243,7 +243,7 @@ struct SettingsView: View {
     // MARK: - Computed Properties
     
     private var hasPremiumAccess: Bool {
-        storeKitManager.hasPremiumAccess || userPreferences?.isSubscriptionValid == true
+        storeManager.hasPremiumAccess || userPreferences?.isSubscriptionValid == true
     }
     
     private var subscriptionStatusText: String {
@@ -294,7 +294,7 @@ private struct InfoRow: View {
     let container = try! ModelContainer(for: UserPreferences.self, configurations: config)
     
     SettingsView(
-        storeKitManager: StoreKitManager(),
+        storeManager: StoreManager(),
         modelContext: container.mainContext,
         onDismiss: {}
     )

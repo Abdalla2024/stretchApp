@@ -50,25 +50,25 @@ struct OnboardingView: View {
                 
                 // Features List
                 VStack(spacing: 32) {
-                    FeatureRow(
+                    OnboardingFeatureRow(
                         icon: "figure.flexibility",
                         title: "20+ Body Parts",
                         description: "Neck, shoulders, back, hips, and more!"
                     )
                     
-                    FeatureRow(
+                    OnboardingFeatureRow(
                         icon: "timer",
                         title: "Guided Timers",
                         description: "Perfect timing for each stretch exercise"
                     )
                     
-                    FeatureRow(
+                    OnboardingFeatureRow(
                         icon: "arrow.right.circle.fill",
                         title: "Easy Navigation",
                         description: "Simple progression through your routine"
                     )
                     
-                    FeatureRow(
+                    OnboardingFeatureRow(
                         icon: "heart.fill",
                         title: "Better Flexibility",
                         description: "Improve mobility and reduce stiffness"
@@ -115,7 +115,7 @@ struct OnboardingView: View {
 
 // MARK: - Feature Row Component
 
-private struct FeatureRow: View {
+private struct OnboardingFeatureRow: View {
     let icon: String
     let title: String
     let description: String
